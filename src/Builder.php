@@ -16,11 +16,11 @@ class Builder
 
     /**
      * @param string $pharname имя генерируемого .phar-пакета
-     * @param string $deployer тип деплоя - delta или full
+     * @param string $archiver тип архиватора - delta, full, git bundle, git diff...
      * @param string $from директория с старой версией
      * @param string $to директория с новой версией
      */
-    public function build($pharname = "result.phar", $deployer = 'delta', $from, $to)
+    public function build($pharname = "result.phar", $archiver = 'delta', $from, $to)
     {
         $this->from_dir = $from;
         $this->to_dir = $to;
@@ -29,14 +29,14 @@ class Builder
         $phar = $this->create_phar($pharname);
         $phar->setSignatureAlgorithm(\Phar::SHA1);
         $phar->startBuffering();
-        $this->build_config['deployer'] = $deployer;
-        if ($deployer == 'delta') {
+        $this->build_config['deployer'] = $archiver;
+        if ($archiver == 'delta') {
             $this->make_delta($phar);
         } else {
             $this->make_full_archive($phar);
         }
 
-        $this->inject_deployer_to_phar($phar, $deployer);
+        $this->inject_deployer_to_phar($phar, $archiver);
         $phar->addFromString($this->internal_config_file, json_encode($this->build_config));
         $phar->stopBuffering();
     }

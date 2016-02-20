@@ -3,7 +3,7 @@
 namespace Extractor;
 
 
-class DeltaExtractor extends AbstractExtractor
+class DeltaArchiver extends AbstractArchiver
 {
     public function inject_extractor($phar_file){
 

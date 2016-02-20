@@ -5,10 +5,14 @@ namespace Extractor;
 
 use BadMethodCallException;
 
-class AbstractExtractor
+class AbstractArchiver
 {
     public function inject_extractor($phar_file)
     {
+        throw new NotImplementedException('Not implemented.');
+    }
+
+    public function archive($to, $from){
         throw new NotImplementedException('Not implemented.');
     }
 }
