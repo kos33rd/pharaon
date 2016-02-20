@@ -11,7 +11,7 @@ class Builder
     private $to_dir;
 
     private $internal_archive_dir = 'archive';
-    private $internal_config_file = '.pharaon.json';
+    private $internal_config_file = 'pharaon.json';
     private $build_config;
 
     /**
@@ -20,7 +20,7 @@ class Builder
      * @param string $from директория с старой версией
      * @param string $to директория с новой версией
      */
-    public function build($pharname = "result.phar", $deployer='delta', $from, $to)
+    public function build($pharname = "result.phar", $deployer = 'delta', $from, $to)
     {
         $this->from_dir = $from;
         $this->to_dir = $to;
@@ -51,7 +51,7 @@ class Builder
         }
         $files_to_delete_list = '';
         foreach ($files_to_delete as $file) {
-            $files_to_delete_list .=  str_replace_first($this->from_dir, '', $file->getPathname()). "\n";
+            $files_to_delete_list .= str_replace_first($this->from_dir, '', $file->getPathname()) . "\n";
         }
         $phar->addFromString('files_to_delete.txt', $files_to_delete_list);
         return $phar;
@@ -107,11 +107,16 @@ class Builder
             $src_file = new SplFileInfo($src_abs_path);
 
             if ($src_file->isFile()) {
-                if ($dest_file->getMTime() > $src_file->getMTime()) {
-                    echo '(M) ' . $dest_file->getPathname() . PHP_EOL;
-                    return true;
+                if ($dest_file->getMTime() != $src_file->getMTime()) {
+                    if(!files_identical($dest_file, $src_file)){
+                        echo '(M) ' . $dest_file->getPathname() . PHP_EOL;
+                        return true;
+                    } else {
+                        echo '(OC) ' . $dest_file->getPathname() . PHP_EOL;
+                        return false;
+                    }
                 } else {
-                    echo '(O) ' . $dest_file->getPathname() . PHP_EOL;
+                    echo '(OT) ' . $dest_file->getPathname() . PHP_EOL;
                     return false;
                 }
             } else {
@@ -164,7 +169,7 @@ class Builder
     {
         // хитровыебанный strtr невозбранно спизжен у composer-а
         $path = strtr(str_replace(__DIR__ . DIRECTORY_SEPARATOR, '', $file->getPathname()), '\\', '/');
-        $path = $this->internal_archive_dir.str_replace_first($this->to_dir, '', $path);
+        $path = $this->internal_archive_dir . str_replace_first($this->to_dir, '', $path);
         $content = file_get_contents($file);
         $phar->addFromString($path, $content);
     }
@@ -173,6 +178,37 @@ class Builder
 
 function str_replace_first($from, $to, $subject)
 {
-    $from = '/'.preg_quote($from, '/').'/';
+    $from = '/' . preg_quote($from, '/') . '/';
     return preg_replace($from, $to, $subject, 1);
+}
+
+
+define('READ_LEN', 4096);
+
+//   pass two file names
+//   returns TRUE if files are the same, FALSE otherwise
+function files_identical($fn1, $fn2)
+{
+    if (filetype($fn1) !== filetype($fn2))
+        return FALSE;
+    if (filesize($fn1) !== filesize($fn2))
+        return FALSE;
+    if (!$fp1 = fopen($fn1, 'rb'))
+        return FALSE;
+    if (!$fp2 = fopen($fn2, 'rb')) {
+        fclose($fp1);
+        return FALSE;
+    }
+    $same = TRUE;
+    while (!feof($fp1) and !feof($fp2))
+        if (fread($fp1, READ_LEN) !== fread($fp2, READ_LEN)) {
+            $same = FALSE;
+            break;
+        }
+
+    if (feof($fp1) !== feof($fp2))
+        $same = FALSE;
+    fclose($fp1);
+    fclose($fp2);
+    return $same;
 }
